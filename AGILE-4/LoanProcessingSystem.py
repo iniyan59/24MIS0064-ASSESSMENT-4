@@ -1,195 +1,259 @@
-# Banking Loan Approval System
-# Development Program
+import sys
+import math
+
+
+def print_rejected(customer_id, reason):
+    print()
+    print("=" * 50)
+    print("       BANKING LOAN APPROVAL SYSTEM")
+    print("=" * 50)
+    print(f"Customer ID          : {customer_id}")
+    print("Loan Status          : REJECTED")
+    print(f"Rejection Reason     : {reason}")
+    print("=" * 50)
+
+
+def main():
+
+    # --------------------------------------------------
+    # CHECK INPUT COUNT
+    # --------------------------------------------------
+
+    if len(sys.argv) != 9:
+        print("ERROR: Invalid number of inputs...Please enter the correct inputs")
+        print()
+        print("Usage:")
+        print(
+            "python LoanProcessingSystem.py "
+            "<CustomerID> <Age> <Salary> <ExistingLoan> "
+            "<CreditScore> <EmploymentType> "
+            "<RequestedLoan> <Tenure>"
+        )
+        return
+
+    try:
+
+        # --------------------------------------------------
+        # READ INPUTS
+        # --------------------------------------------------
+
+        customer_id = sys.argv[1]
+        age = int(sys.argv[2])
+        monthly_salary = float(sys.argv[3])
+        existing_loan = float(sys.argv[4])
+        credit_score = int(sys.argv[5])
+        employment_type = sys.argv[6]
+        requested_loan = float(sys.argv[7])
+        loan_tenure = int(sys.argv[8])
+
+        # --------------------------------------------------
+        # INPUT VALIDATION
+        # --------------------------------------------------
+
+        if age < 18 or age > 60:
+            print_rejected(
+                customer_id,
+                "Age must be between 18 and 60."
+            )
+            return
+
+        if monthly_salary <= 0:
+            print_rejected(
+                customer_id,
+                "Monthly salary must be greater than zero."
+            )
+            return
+
+        if existing_loan < 0:
+            print_rejected(
+                customer_id,
+                "Existing loan amount cannot be negative."
+            )
+            return
+
+        if credit_score < 0 or credit_score > 900:
+            print_rejected(
+                customer_id,
+                "Credit score must be between 0 and 900."
+            )
+            return
+
+        if requested_loan <= 0:
+            print_rejected(
+                customer_id,
+                "Requested loan amount must be greater than zero."
+            )
+            return
+
+        if loan_tenure <= 0:
+            print_rejected(
+                customer_id,
+                "Loan tenure must be greater than zero."
+            )
+            return
+
+        # --------------------------------------------------
+        # EMPLOYMENT VALIDATION
+        # --------------------------------------------------
+
+        valid_employment = employment_type.lower() in [
+            "salaried",
+            "self-employed",
+            "business"
+        ]
 
-def calculate_dti(existing_loan, salary):
-    if salary <= 0:
-        raise ValueError("Salary must be greater than 0")
+        if not valid_employment:
+            print_rejected(
+                customer_id,
+                "Employment type must be "
+                "Salaried, Self-Employed, or Business."
+            )
+            return
 
-    return (existing_loan / salary) * 100
+        # --------------------------------------------------
+        # DTI CALCULATION
+        # --------------------------------------------------
+        #
+        # Assumption:
+        # Existing loan is converted into a monthly
+        # obligation using a 60-month period.
+        #
 
+        existing_monthly_obligation = existing_loan / 60
+
+        dti = (
+            existing_monthly_obligation
+            / monthly_salary
+        ) * 100
 
-def calculate_eligible_loan(salary, credit_score, dti):
+        # --------------------------------------------------
+        # ELIGIBLE LOAN AMOUNT
+        # --------------------------------------------------
+        #
+        # Assumption:
+        # Maximum eligible loan = 20 × monthly salary
+        #
 
-    if credit_score >= 750 and dti <= 40:
-        return salary * 20
+        eligible_loan = monthly_salary * 20
 
-    elif credit_score >= 650 and dti <= 50:
-        return salary * 15
+        # --------------------------------------------------
+        # INTEREST RATE
+        # --------------------------------------------------
 
-    else:
-        return salary * 10
+        if credit_score >= 750:
+            interest_rate = 8.0
 
+        elif credit_score >= 600:
+            interest_rate = 10.0
 
-def calculate_interest_rate(credit_score):
+        else:
+            interest_rate = 12.0
 
-    if credit_score >= 750:
-        return 8.0
+        # --------------------------------------------------
+        # APPROVAL CHECK
+        # --------------------------------------------------
 
-    elif credit_score >= 650:
-        return 10.0
+        approved = True
+        rejection_reason = ""
 
-    else:
-        return 12.0
+        if credit_score < 600:
 
+            approved = False
+            rejection_reason = "Poor credit score."
 
-def calculate_emi(loan_amount, interest_rate, tenure):
+        elif dti > 40:
 
-    if loan_amount <= 0:
-        raise ValueError("Loan amount must be greater than 0")
+            approved = False
+            rejection_reason = "High debt-to-income ratio."
 
-    if tenure <= 0:
-        raise ValueError("Loan tenure must be greater than 0")
+        elif requested_loan > eligible_loan:
 
-    monthly_rate = interest_rate / (12 * 100)
-    months = tenure * 12
+            approved = False
+            rejection_reason = (
+                "Requested loan amount exceeds "
+                "eligible loan amount."
+            )
 
-    emi = (
-        loan_amount
-        * monthly_rate
-        * (1 + monthly_rate) ** months
-        / ((1 + monthly_rate) ** months - 1)
-    )
+        # --------------------------------------------------
+        # EMI CALCULATION
+        # --------------------------------------------------
 
-    return emi
+        monthly_rate = interest_rate / (12 * 100)
 
+        if monthly_rate == 0:
 
-def check_approval(age, credit_score, dti,
-                   requested_loan, eligible_loan):
+            emi = requested_loan / loan_tenure
 
-    if age < 21 or age > 60:
-        return "REJECTED"
+        else:
 
-    if credit_score < 650:
-        return "REJECTED"
+            power = math.pow(
+                1 + monthly_rate,
+                loan_tenure
+            )
 
-    if dti > 50:
-        return "REJECTED"
+            emi = (
+                requested_loan
+                * monthly_rate
+                * power
+            ) / (power - 1)
 
-    if requested_loan > eligible_loan:
-        return "REJECTED"
+        # --------------------------------------------------
+        # DISPLAY RESULT
+        # --------------------------------------------------
 
-    return "APPROVED"
+        print()
+        print("=" * 50)
+        print("       BANKING LOAN APPROVAL SYSTEM")
+        print("=" * 50)
 
+        print(f"Customer ID          : {customer_id}")
+        print(f"Age                  : {age}")
+        print(f"Monthly Salary       : ₹{monthly_salary:.2f}")
+        print(f"Existing Loan Amount : ₹{existing_loan:.2f}")
+        print(f"Credit Score         : {credit_score}")
+        print(f"Employment Type      : {employment_type}")
+        print(f"Requested Loan       : ₹{requested_loan:.2f}")
+        print(f"Loan Tenure          : {loan_tenure} months")
 
-# -------------------------------
-# MAIN PROGRAM
-# -------------------------------
+        print("-" * 50)
 
-try:
+        print(f"Debt-to-Income Ratio : {dti:.2f}%")
+        print(f"Eligible Loan Amount : ₹{eligible_loan:.2f}")
+        print(f"Interest Rate        : {interest_rate:.2f}%")
+        print(f"Monthly EMI          : ₹{emi:.2f}")
 
-    print("======================================")
-    print("     BANKING LOAN APPROVAL SYSTEM")
-    print("======================================")
+        print("-" * 50)
 
-    customer_id = input("Enter Customer ID: ")
+        if approved:
 
-    age = int(input("Enter Age: "))
+            print("Loan Status          : APPROVED")
 
-    salary = float(input("Enter Monthly Salary: "))
+        else:
 
-    existing_loan = float(input("Enter Existing Loan Amount: "))
+            print("Loan Status          : REJECTED")
+            print(f"Rejection Reason     : {rejection_reason}")
 
-    credit_score = int(input("Enter Credit Score: "))
+        print("=" * 50)
 
-    employment_type = input(
-        "Enter Employment Type (Salaried/Self-Employed): "
-    )
 
-    requested_loan = float(
-        input("Enter Requested Loan Amount: ")
-    )
+    # --------------------------------------------------
+    # ERROR HANDLING
+    # --------------------------------------------------
 
-    tenure = int(
-        input("Enter Loan Tenure (years): ")
-    )
+    except ValueError:
 
-    # Basic validation
-    if age < 0:
-        raise ValueError("Invalid age")
+        print()
+        print("ERROR: Invalid input.")
+        print(
+            "Age, salary, loan amount, credit score "
+            "and tenure must be valid numbers."
+        )
 
-    if salary <= 0:
-        raise ValueError("Invalid salary")
+    except Exception as e:
 
-    if existing_loan < 0:
-        raise ValueError("Invalid existing loan amount")
+        print()
+        print(f"ERROR: {e}")
 
-    if credit_score < 0:
-        raise ValueError("Invalid credit score")
 
-    if requested_loan <= 0:
-        raise ValueError("Invalid requested loan amount")
-
-    if tenure <= 0:
-        raise ValueError("Invalid loan tenure")
-
-    # Calculations
-
-    dti = calculate_dti(
-        existing_loan,
-        salary
-    )
-
-    eligible_loan = calculate_eligible_loan(
-        salary,
-        credit_score,
-        dti
-    )
-
-    interest_rate = calculate_interest_rate(
-        credit_score
-    )
-
-    emi = calculate_emi(
-        requested_loan,
-        interest_rate,
-        tenure
-    )
-
-    status = check_approval(
-        age,
-        credit_score,
-        dti,
-        requested_loan,
-        eligible_loan
-    )
-
-    # Display result
-
-    print("\n======================================")
-    print("          LOAN PROCESSING RESULT")
-    print("======================================")
-
-    print("Customer ID       :", customer_id)
-    print("Age               :", age)
-    print("Monthly Salary    : ₹", format(salary, ".2f"))
-    print("Existing Loan     : ₹", format(existing_loan, ".2f"))
-    print("Credit Score      :", credit_score)
-    print("Employment Type   :", employment_type)
-    print("Requested Loan    : ₹", format(requested_loan, ".2f"))
-    print("Loan Tenure       :", tenure, "years")
-
-    print("--------------------------------------")
-
-    print("Debt-to-Income Ratio :",
-          format(dti, ".2f"), "%")
-
-    print("Eligible Loan Amount : ₹",
-          format(eligible_loan, ".2f"))
-
-    print("Interest Rate        :",
-          interest_rate, "%")
-
-    print("Monthly EMI          : ₹",
-          format(emi, ".2f"))
-
-    print("Approval Status      :", status)
-
-    print("======================================")
-
-except ValueError as e:
-
-    print("\nError:", e)
-
-except Exception as e:
-
-    print("\nUnexpected Error:", e)
+if __name__ == "__main__":
+    main()
